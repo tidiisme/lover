@@ -5,44 +5,95 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hiệu ứng tình yêu rơi</title>
   <style>
-    /* ... CSS giữ nguyên ... */
+    body {
+      margin: 0;
+      background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+      overflow: hidden;
+      height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      position: relative;
+    }
+    .rain-container { position: relative; width: 100%; height: 100%; z-index: 1; }
+    .cloud {
+      position: absolute; opacity: 0.7; pointer-events: none; z-index: 0;
+      animation: drift linear infinite;
+    }
+    .cloud-1 { width: 200px; top: 10%; left: 5%; animation-duration: 30s; }
+    .cloud-2 { width: 150px; top: 20%; right: 10%; animation-duration: 40s; animation-direction: reverse; }
+    .cloud-3 { width: 180px; top: 40%; left: 20%; animation-duration: 35s; }
+    @keyframes drift {
+      0% { transform: translateX(-20vw); }
+      100% { transform: translateX(120vw); }
+    }
+    .char, .falling-image {
+      position: absolute; user-select: none; opacity: 0.9;
+      animation: fall linear infinite; z-index: 1;
+    }
+    .char {
+      color: #fff; text-shadow: 0 0 8px #ff69b4;
+      white-space: nowrap; font-size: 24px;
+    }
+    .falling-image {
+      width: 60px; height: 60px;
+    }
+    @keyframes fall {
+      0% { transform: translateY(-100%); opacity: 0.3; }
+      50% { opacity: 1; }
+      100% { transform: translateY(100vh); opacity: 0.1; }
+    }
+    audio { display: none; }
   </style>
-
-  <!-- Di chuyển đoạn script vào trong head -->
-  <script type="text/javascript">
-    var gk_isXlsx = false;
-    var gk_xlsxFileLookup = {};
-    var gk_fileData = {};
-    function filledCell(cell) {
-      return cell !== '' && cell != null;
-    }
-    function loadFileData(filename) {
-      if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-        try {
-          var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-          var firstSheetName = workbook.SheetNames[0];
-          var worksheet = workbook.Sheets[firstSheetName];
-          var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-          var filteredData = jsonData.filter(row => row.some(filledCell));
-          var headerRowIndex = filteredData.findIndex((row, index) =>
-            row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-          );
-          if (headerRowIndex === -1 || headerRowIndex > 25) {
-            headerRowIndex = 0;
-          }
-          var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
-          csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-          return csv;
-        } catch (e) {
-          console.error(e);
-          return "";
-        }
-      }
-      return gk_fileData[filename] || "";
-    }
-  </script>
 </head>
 <body>
-  <!-- Phần còn lại giữ nguyên -->
+  <audio autoplay loop>
+    <source src="https://raw.githubusercontent.com/tidiisme/lover/main/1.mp3" type="audio/mpeg">
+    Trình duyệt không hỗ trợ audio.
+  </audio>
+
+  <!-- Mây -->
+  <img src="https://cdn.pixabay.com/photo/2016/03/31/19/05/cloud-1294458_1280.png" class="cloud cloud-1" alt="cloud">
+  <img src="https://cdn.pixabay.com/photo/2016/03/31/19/05/cloud-1294458_1280.png" class="cloud cloud-2" alt="cloud">
+  <img src="https://cdn.pixabay.com/photo/2016/03/31/19/05/cloud-1294458_1280.png" class="cloud cloud-3" alt="cloud">
+
+  <!-- Rơi -->
+  <div class="rain-container" id="rain"></div>
+
+  <script>
+    const container = document.getElementById("rain");
+    const phrases = ["Vũ Tú Mây", "25/10/2001", "❤️", "我爱你", "宝贝"];
+    const imageUrls = ["https://cdn-icons-png.flaticon.com/512/833/833472.png"];
+
+    function createChar() {
+      const el = document.createElement("div");
+      el.classList.add("char");
+      el.textContent = phrases[Math.floor(Math.random() * phrases.length)];
+      el.style.left = Math.random() * (window.innerWidth - 100) + "px";
+      el.style.animationDuration = (Math.random() * 3 + 3) + "s";
+      el.style.fontSize = (Math.random() * 10 + 20) + "px";
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 6000);
+    }
+
+    function createImage() {
+      const el = document.createElement("img");
+      el.classList.add("falling-image");
+      el.src = imageUrls[0];
+      el.style.left = Math.random() * (window.innerWidth - 60) + "px";
+      el.style.animationDuration = (Math.random() * 3 + 4) + "s";
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 7000);
+    }
+
+    setInterval(() => {
+      createChar();
+      createChar();
+      if (Math.random() > 0.9) createImage();
+    }, 200);
+
+    window.addEventListener("resize", () => {
+      container.style.width = window.innerWidth + "px";
+      container.style.height = window.innerHeight + "px";
+    });
+  </script>
 </body>
 </html>
