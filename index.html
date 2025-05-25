@@ -3,96 +3,159 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hiệu ứng tình yêu rơi</title>
+  <title>VTM</title>
   <style>
     body {
       margin: 0;
-      background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
       overflow: hidden;
-      height: 100vh;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      position: relative;
+      background: #000000;
     }
-    .rain-container { position: relative; width: 100%; height: 100%; z-index: 1; }
-    .cloud {
-      position: absolute; opacity: 0.7; pointer-events: none; z-index: 0;
-      animation: drift linear infinite;
+    canvas {
+      display: block;
     }
-    .cloud-1 { width: 200px; top: 10%; left: 5%; animation-duration: 30s; }
-    .cloud-2 { width: 150px; top: 20%; right: 10%; animation-duration: 40s; animation-direction: reverse; }
-    .cloud-3 { width: 180px; top: 40%; left: 20%; animation-duration: 35s; }
-    @keyframes drift {
-      0% { transform: translateX(-20vw); }
-      100% { transform: translateX(120vw); }
+    audio {
+      display: none;
     }
-    .char, .falling-image {
-      position: absolute; user-select: none; opacity: 0.9;
-      animation: fall linear infinite; z-index: 1;
-    }
-    .char {
-      color: #fff; text-shadow: 0 0 8px #ff69b4;
-      white-space: nowrap; font-size: 24px;
-    }
-    .falling-image {
-      width: 60px; height: 60px;
-    }
-    @keyframes fall {
-      0% { transform: translateY(-100%); opacity: 0.3; }
-      50% { opacity: 1; }
-      100% { transform: translateY(100vh); opacity: 0.1; }
-    }
-    audio { display: none; }
   </style>
 </head>
 <body>
   <audio autoplay loop>
     <source src="https://raw.githubusercontent.com/tidiisme/lover/main/1.mp3" type="audio/mpeg">
-    Trình duyệt không hỗ trợ audio.
+    Trình duyệt của bạn không hỗ trợ audio.
   </audio>
 
-  <!-- Mây -->
-  <img src="https://cdn.pixabay.com/photo/2016/03/31/19/05/cloud-1294458_1280.png" class="cloud cloud-1" alt="cloud">
-  <img src="https://cdn.pixabay.com/photo/2016/03/31/19/05/cloud-1294458_1280.png" class="cloud cloud-2" alt="cloud">
-  <img src="https://cdn.pixabay.com/photo/2016/03/31/19/05/cloud-1294458_1280.png" class="cloud cloud-3" alt="cloud">
-
-  <!-- Rơi -->
-  <div class="rain-container" id="rain"></div>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script>
-    const container = document.getElementById("rain");
-    const phrases = ["Vũ Tú Mây", "25/10/2001", "❤️", "我爱你", "宝贝"];
-    const imageUrls = ["https://cdn-icons-png.flaticon.com/512/833/833472.png"];
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-    function createChar() {
-      const el = document.createElement("div");
-      el.classList.add("char");
-      el.textContent = phrases[Math.floor(Math.random() * phrases.length)];
-      el.style.left = Math.random() * (window.innerWidth - 100) + "px";
-      el.style.animationDuration = (Math.random() * 3 + 3) + "s";
-      el.style.fontSize = (Math.random() * 10 + 20) + "px";
-      container.appendChild(el);
-      setTimeout(() => el.remove(), 6000);
+    scene.background = new THREE.Color(0x000000);
+
+    // Tạo nền sao
+    const starGeometry = new THREE.BufferGeometry();
+    const starCount = 1000;
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i += 3) {
+      starPositions[i] = (Math.random() - 0.5) * 2000;
+      starPositions[i + 1] = (Math.random() - 0.5) * 2000;
+      starPositions[i + 2] = (Math.random() - 0.5) * 2000;
+    }
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0xFFFFFF,
+      size: 2,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.8
+    });
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
+
+    // Ánh sáng
+    const light = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(light);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    directionalLight.position.set(0, 1, 1);
+    scene.add(directionalLight);
+
+    camera.position.z = 50;
+
+    const phrases = ["Vũ Tú Mây", "25/10/2001", "❤️", "我爱你", "宝贝", "Hi Mây", "Kim Mây", "☁️"];
+    const textSprites = [];
+
+    function createTextSprite(message) {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      context.font = 'Bold 60px Arial';
+      context.fillStyle = '#FFFFFF';
+      context.strokeStyle = '#FFFFFF';
+      context.lineWidth = 8;
+      context.shadowColor = '#00FFFF';
+      context.shadowBlur = 30;
+      context.strokeText(message, 0, 60);
+      context.fillText(message, 0, 60);
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(30, 15, 1);
+
+      const radius = 100;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const x = radius * Math.sin(phi) * Math.cos(theta);
+      const z = radius * Math.sin(phi) * Math.sin(theta);
+      const y = 50;
+
+      sprite.position.set(x, y, z);
+      sprite.velocity = new THREE.Vector3(
+        (Math.random() - 0.5) * 0.1,
+        -0.3,
+        (Math.random() - 0.5) * 0.1
+      );
+      scene.add(sprite);
+      return sprite;
     }
 
-    function createImage() {
-      const el = document.createElement("img");
-      el.classList.add("falling-image");
-      el.src = imageUrls[0];
-      el.style.left = Math.random() * (window.innerWidth - 60) + "px";
-      el.style.animationDuration = (Math.random() * 3 + 4) + "s";
-      container.appendChild(el);
-      setTimeout(() => el.remove(), 7000);
+    for (let i = 0; i < 100; i++) {
+      textSprites.push(createTextSprite(phrases[Math.floor(Math.random() * phrases.length)]));
     }
 
-    setInterval(() => {
-      createChar();
-      createChar();
-      if (Math.random() > 0.9) createImage();
-    }, 200);
+    function spawnText() {
+      if (textSprites.length < 200) {
+        const sprite = createTextSprite(phrases[Math.floor(Math.random() * phrases.length)]);
+        textSprites.push(sprite);
+      }
+    }
+    setInterval(spawnText, 25);
 
-    window.addEventListener("resize", () => {
-      container.style.width = window.innerWidth + "px";
-      container.style.height = window.innerHeight + "px";
+    function animate() {
+      requestAnimationFrame(animate);
+
+      for (let i = textSprites.length - 1; i >= 0; i--) {
+        const sprite = textSprites[i];
+        sprite.position.add(sprite.velocity);
+        if (sprite.position.y < -50) {
+          scene.remove(sprite);
+          sprite.material.map.dispose();
+          sprite.material.dispose();
+          textSprites.splice(i, 1);
+        }
+      }
+
+      starMaterial.opacity = 0.8 + Math.sin(Date.now() * 0.001) * 0.2;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    document.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        const deltaMove = {
+          x: e.clientX - previousMousePosition.x,
+          y: e.clientY - previousMousePosition.y
+        };
+        camera.rotation.y += deltaMove.x * 0.005;
+        camera.rotation.x += deltaMove.y * 0.005;
+        previousMousePosition = { x: e.clientX, y: e.clientY };
+      }
+    });
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
   </script>
 </body>
