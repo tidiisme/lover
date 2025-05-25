@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hiệu ứng 3D mưa chữ trên bầu trời sao</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background: #000;
+      background: #000000;
     }
     canvas {
       display: block;
@@ -20,21 +20,21 @@
 </head>
 <body>
   <audio autoplay loop>
-    <source src="https://raw.githubusercontent.com/tidiisme/lover/main/1.mp3" type="audio/mpeg" />
+    <source src="https://raw.githubusercontent.com/tidiisme/lover/main/1.mp3" type="audio/mpeg">
     Trình duyệt của bạn không hỗ trợ audio.
   </audio>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script>
-    // Scene, camera, renderer
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Nền sao
     scene.background = new THREE.Color(0x000000);
+
+    // Tạo sao
     const starGeometry = new THREE.BufferGeometry();
     const starCount = 1000;
     const starPositions = new Float32Array(starCount * 3);
@@ -55,33 +55,32 @@
     scene.add(stars);
 
     // Ánh sáng
-    const light = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(light);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
     directionalLight.position.set(0, 1, 1);
     scene.add(directionalLight);
 
     camera.position.z = 50;
 
-    // Dữ liệu mưa chữ
-    const phrases = ["Vũ Tú Mây", "25/10/2001", "❤️", "我爱你", "宝贝", "Happy", "Love", "You"];
+    const phrases = ["Vũ Tú Mây", "25/10/2001", "❤️", "我爱你", "宝贝", "Hi Mây", "Kim Mây", "☁️"];
     const textSprites = [];
 
     function createTextSprite(message) {
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
-      context.font = 'Bold 60px Arial';
+      context.font = 'Bold 50px Arial'; // giảm font
       context.fillStyle = '#FFFFFF';
       context.strokeStyle = '#FFFFFF';
       context.lineWidth = 8;
       context.shadowColor = '#00FFFF';
       context.shadowBlur = 30;
-      context.strokeText(message, 0, 60);
-      context.fillText(message, 0, 60);
+      context.strokeText(message, 0, 50);
+      context.fillText(message, 0, 50);
+
       const texture = new THREE.CanvasTexture(canvas);
       const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
       const sprite = new THREE.Sprite(material);
-      sprite.scale.set(30, 15, 1);
+      sprite.scale.set(25, 12.5, 1); // giảm scale
 
       const radius = 100;
       const theta = Math.random() * Math.PI * 2;
@@ -100,12 +99,11 @@
       return sprite;
     }
 
-    // Khởi tạo chữ rơi
+    // Khởi tạo chữ
     for (let i = 0; i < 100; i++) {
       textSprites.push(createTextSprite(phrases[Math.floor(Math.random() * phrases.length)]));
     }
 
-    // Tạo chữ rơi liên tục
     function spawnText() {
       if (textSprites.length < 200) {
         const sprite = createTextSprite(phrases[Math.floor(Math.random() * phrases.length)]);
@@ -114,10 +112,8 @@
     }
     setInterval(spawnText, 25);
 
-    // Vòng lặp hoạt họa
     function animate() {
       requestAnimationFrame(animate);
-
       for (let i = textSprites.length - 1; i >= 0; i--) {
         const sprite = textSprites[i];
         sprite.position.add(sprite.velocity);
@@ -128,58 +124,53 @@
           textSprites.splice(i, 1);
         }
       }
-
       starMaterial.opacity = 0.8 + Math.sin(Date.now() * 0.001) * 0.2;
       renderer.render(scene, camera);
     }
     animate();
 
-    // Tương tác chuột và cảm ứng
+    // Xoay bằng chuột
     let isDragging = false;
-    let previousPosition = { x: 0, y: 0 };
-
-    // Chuột
+    let previousMousePosition = { x: 0, y: 0 };
     document.addEventListener('mousedown', (e) => {
       isDragging = true;
-      previousPosition = { x: e.clientX, y: e.clientY };
+      previousMousePosition = { x: e.clientX, y: e.clientY };
     });
     document.addEventListener('mousemove', (e) => {
       if (isDragging) {
-        const deltaX = e.clientX - previousPosition.x;
-        const deltaY = e.clientY - previousPosition.y;
-        camera.rotation.y += deltaX * 0.005;
-        camera.rotation.x += deltaY * 0.005;
-        previousPosition = { x: e.clientX, y: e.clientY };
+        const deltaMove = {
+          x: e.clientX - previousMousePosition.x,
+          y: e.clientY - previousMousePosition.y
+        };
+        camera.rotation.y += deltaMove.x * 0.005;
+        camera.rotation.x += deltaMove.y * 0.005;
+        previousMousePosition = { x: e.clientX, y: e.clientY };
       }
     });
     document.addEventListener('mouseup', () => {
       isDragging = false;
     });
 
-    // Cảm ứng
+    // Xoay bằng cảm ứng
+    let isTouching = false;
+    let previousTouch = { x: 0, y: 0 };
     document.addEventListener('touchstart', (e) => {
       if (e.touches.length === 1) {
-        isDragging = true;
-        previousPosition = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY
-        };
+        isTouching = true;
+        previousTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       }
     });
     document.addEventListener('touchmove', (e) => {
-      if (isDragging && e.touches.length === 1) {
-        const deltaX = e.touches[0].clientX - previousPosition.x;
-        const deltaY = e.touches[0].clientY - previousPosition.y;
+      if (isTouching && e.touches.length === 1) {
+        const deltaX = e.touches[0].clientX - previousTouch.x;
+        const deltaY = e.touches[0].clientY - previousTouch.y;
         camera.rotation.y += deltaX * 0.005;
         camera.rotation.x += deltaY * 0.005;
-        previousPosition = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY
-        };
+        previousTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       }
     });
     document.addEventListener('touchend', () => {
-      isDragging = false;
+      isTouching = false;
     });
 
     // Resize
@@ -191,3 +182,4 @@
   </script>
 </body>
 </html>
+
